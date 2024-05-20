@@ -15,8 +15,27 @@ body {
   min-height: 100vh;
 }
 
-#root {
+.main {
   display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+  flex: 1;
+}
+
+.left {
+  background: rgb(77, 76, 76);
+  padding: 3em 0 3em 0;
+  flex: 1 1 100px;
+}
+
+main {
+  background: rgb(45, 45, 45);
+  padding: 3em 0 3em 0;
+  flex: 5 5 150px;
+
+}
+
+.right {
+  background: rgb(77, 76, 76);
+  padding: 3em 0 3em 0;
+  flex: 1 1 100px;
+
 }
