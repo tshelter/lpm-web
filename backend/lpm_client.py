@@ -1,32 +1,11 @@
-import uuid
 import asyncio
 import logging
+import uuid
+
 import websockets
-from pydantic import BaseModel
+from schemas import Action, Request, Response
 
 URL = "ws://localhost:8000/client_ws/client1"
-
-
-class Log(BaseModel):
-    message: str
-    service: str
-
-
-class Action(BaseModel):
-    action: str
-    service: str
-
-
-class Request(BaseModel):
-    uuid: str | None
-    payload: Log | Action
-    agent_id: str
-
-
-class Response(BaseModel):
-    uuid: str | None
-    payload: dict
-    agent_id: str
 
 
 async def handle_incoming(socket: websockets.WebSocketClientProtocol):

@@ -1,43 +1,23 @@
-import uuid
-
 import asyncio
 import logging
+import uuid
+
 import websockets
-from pydantic import BaseModel
+from schemas import Action, Log, Request, Response
 
 URL = "ws://localhost:8000/agent_ws/agent1"
-
-
-class Log(BaseModel):
-    message: str
-    service: str
-
-
-class Action(BaseModel):
-    action: str
-    service: str
-
-
-class Request(BaseModel):
-    uuid: str | None
-    payload: Log | Action
-    agent_id: str
-
-
-class Response(BaseModel):
-    uuid: str | None
-    payload: dict
-    agent_id: str
 
 
 async def send_logs(socket: websockets.WebSocketClientProtocol):
     while True:
         log = Log(message="This is a log message", service="service1")
-        await socket.send(Request(
-            uuid=None,
-            payload=log,
-            agent_id="agent1",
-        ).json())
+        await socket.send(
+            Request(
+                uuid=None,
+                payload=log,
+                agent_id="agent1",
+            ).json()
+        )
         await asyncio.sleep(1)
 
 
