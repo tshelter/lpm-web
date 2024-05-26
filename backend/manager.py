@@ -10,12 +10,17 @@ class ConnectionManager:
         await websocket.accept()
         self.active_agents[agent_id] = websocket
 
-    async def send_to_clients(self, message: str):
+    async def send_to_clients(self, message: str, /, client_id: str | None = None):
+        if client_id and (client := self.active_clients.get(client_id)):
+            await client.send_text(message)
+            return
+
         for client in self.active_clients.values():
             await client.send_text(message)
 
     async def send_to_agent(self, agent_id: str, message: str):
-        await self.active_agents[agent_id].send_text(message)
+        if agent := self.active_agents.get(agent_id):
+            await agent.send_text(message)
 
     def disconnect_agent(self, agent_id: str):
         self.active_agents.pop(agent_id)

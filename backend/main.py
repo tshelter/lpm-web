@@ -7,34 +7,29 @@ app = FastAPI()
 manager = ConnectionManager()
 
 
-@app.get("/")
-def read_root():
-    return {"msg": "Hello World"}
-
-
 @app.websocket("/agent_ws/{agent_id}")
 async def websocket_endpoint(websocket: WebSocket, agent_id: str):
-    if agent_id:
-        await manager.connect_agent(agent_id, websocket)
+    await manager.connect_agent(agent_id, websocket)
 
     try:
         while True:
-            data = await websocket.receive_text()
-            await manager.send_to_clients(data)
+            msg = await websocket.receive_text()
+            client_id = json.loads(msg).get("client_id")
+            await manager.send_to_clients(msg, client_id=client_id)
+
     except WebSocketDisconnect:
         manager.disconnect_agent(agent_id)
 
 
 @app.websocket("/client_ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    if client_id:
-        await manager.connect_client(client_id, websocket)
+    await manager.connect_client(client_id, websocket)
 
     try:
         while True:
-            data = json.loads(await websocket.receive_text())
-            agent_id = data["agent_id"]
-            await manager.send_to_agent(agent_id, json.dumps(data))
+            msg = await websocket.receive_text()
+            agent_id = json.loads(msg)["agent_id"]
+            await manager.send_to_agent(agent_id, msg)
 
     except WebSocketDisconnect:
         manager.disconnect_client(client_id)
