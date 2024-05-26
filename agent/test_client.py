@@ -3,7 +3,7 @@ import logging
 import uuid
 
 import websockets
-from schemas import Action, Request, Response
+from schemas import ActionRequest, AgentRequest, AgentResponse
 
 URL = "ws://localhost:8000/client_ws/client1"
 
@@ -11,27 +11,28 @@ URL = "ws://localhost:8000/client_ws/client1"
 async def handle_incoming(socket: websockets.WebSocketClientProtocol):
     while True:
         data = await socket.recv()
-        response = Response.parse_raw(data)
+        response = AgentResponse.parse_raw(data)
         print(response)
 
 
 async def send_requests(socket: websockets.WebSocketClientProtocol):
     while True:
-        request = Request(
+        await asyncio.sleep(3)
+        request = AgentRequest(
             uuid=str(uuid.uuid4()),
-            payload=Action(action="restart", service="service1"),
-            agent_id="agent1",
+            action=ActionRequest(action="reload", service="http_server_9999"),
+            agent_id="test_agent",
         )
         print(f"Sending {request}")
-        await socket.send(request.json())
-        await asyncio.sleep(10)
+        await socket.send(request.json(exclude_none=True))
+        await asyncio.sleep(7)
 
 
 async def main():
     # It will connect to the websocket server,
-    # Generate fake logs every 1 second
+    # Generate fake logs every 5 second
     # Also it listens for messages from the server and prints them
-    # Also it returns result after 0.5 seconds
+    # Also it returns result after 1 second
     async with websockets.connect(URL) as socket:
         asyncio.create_task(handle_incoming(socket))
         asyncio.create_task(send_requests(socket))
