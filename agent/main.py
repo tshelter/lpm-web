@@ -10,6 +10,7 @@ from schemas import LogResponse, AgentRequest, AgentResponse, ActionResponse, St
 
 
 URL = os.getenv("URL", sys.argv[1] if len(sys.argv) > 1 else "ws://localhost:8000/agent_ws/test_agent")
+STATUS_INTERVAL = int(os.getenv("STATUS_INTERVAL", 3))
 AGENT_ID = URL.split("/")[-1]
 service_watcher_processes = {}
 service_watchers = {}
@@ -81,7 +82,7 @@ async def send_status(socket: websockets.WebSocketClientProtocol):
                 agent_id=AGENT_ID,
             ).json(exclude_none=True)
         )
-        await asyncio.sleep(3)
+        await asyncio.sleep(STATUS_INTERVAL)
 
 
 async def run_lpm_command(action, service):
