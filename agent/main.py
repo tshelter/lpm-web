@@ -6,14 +6,38 @@ import shlex
 import subprocess
 import websockets
 
-from schemas import LogResponse, AgentRequest, AgentResponse, ActionResponse, StatusResponse, Service
+from schemas import (
+    LogResponse,
+    AgentRequest,
+    AgentResponse,
+    ActionResponse,
+    StatusResponse,
+    Service,
+)
 
-
-URL = os.getenv("URL", sys.argv[1] if len(sys.argv) > 1 else "ws://localhost:8000/agent_ws/test_agent")
+URL = os.getenv(
+    "URL",
+    sys.argv[1] if len(sys.argv) > 1 else "ws://localhost:8000/agent_ws/test_agent",
+)
 STATUS_INTERVAL = int(os.getenv("STATUS_INTERVAL", 3))
 AGENT_ID = URL.split("/")[-1]
 service_watcher_processes = {}
 service_watchers = {}
+
+
+def parse_services(output: list[str]) -> list[Service]:
+    return [
+        Service(
+            name=name,
+            is_active=is_active == "true",
+            is_enabled=is_enabled == "true",
+            memory=memory,
+        )
+        for name, is_active, is_enabled, memory in [
+            line.split() if len(line.split()) == 4 else line.split() + [""]
+            for line in output
+        ]
+    ]
 
 
 async def read_stream(service, stream, socket):
@@ -37,15 +61,15 @@ async def send_output(service, process, socket):
 
 async def async_check_output(command):
     process = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        *command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
 
     stdout, stderr = await process.communicate()
 
     if process.returncode != 0:
-        raise subprocess.CalledProcessError(process.returncode, command, output=stdout, stderr=stderr)
+        raise subprocess.CalledProcessError(
+            process.returncode, command, output=stdout, stderr=stderr
+        )
 
     return "\n".join([stdout.decode(), stderr.decode()]).strip()
 
@@ -53,19 +77,21 @@ async def async_check_output(command):
 async def send_status(socket: websockets.WebSocketClientProtocol):
     while True:
         output = (await async_check_output(shlex.split("lpm list --raw"))).split("\n")
-        services = [
-            Service(name=name, is_active=is_active == "true", is_enabled=is_enabled == "true", memory=memory)
-            for name, is_active, is_enabled, memory in [line.split() for line in output]
-        ]
+        services = parse_services(output)
         current_services = {service.name for service in services}
         watched_services = set(service_watcher_processes.keys())
 
         new_services = current_services - watched_services
         for service in new_services:
-            process = await asyncio.create_subprocess_exec(*shlex.split(f"lpm logs --follow {service}"),
-                                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = await asyncio.create_subprocess_exec(
+                *shlex.split(f"lpm logs --follow {service}"),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
             service_watcher_processes[service] = process
-            service_watchers[service] = asyncio.create_task(send_output(service, process, socket))
+            service_watchers[service] = asyncio.create_task(
+                send_output(service, process, socket)
+            )
 
         removed_services = watched_services - current_services
         for service in removed_services:
@@ -89,9 +115,7 @@ async def run_lpm_command(action, service):
     command = shlex.split(f"lpm {action} {service}")
 
     process = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        *command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
 
     stdout, stderr = await process.communicate()
@@ -113,7 +137,9 @@ async def handle_request(socket: websockets.WebSocketClientProtocol):
         if request.action:
             response = AgentResponse(
                 action=ActionResponse(
-                    response=await run_lpm_command(request.action.action, request.action.service)
+                    response=await run_lpm_command(
+                        request.action.action, request.action.service
+                    )
                 ),
                 uuid=request.uuid,
                 agent_id=AGENT_ID,
@@ -121,12 +147,15 @@ async def handle_request(socket: websockets.WebSocketClientProtocol):
             await socket.send(response.json(exclude_none=True))
 
         if request.status:
-            output = subprocess.check_output(
-                shlex.split(f"lpm list --raw {request.status.service or ''}")).decode().strip().split("\n")
-            services = [
-                Service(name=name, is_active=is_active == "true", is_enabled=is_enabled == "true", memory=memory)
-                for name, is_active, is_enabled, memory in [line.split() for line in output]
-            ]
+            output = (
+                subprocess.check_output(
+                    shlex.split(f"lpm list --raw {request.status.service or ''}")
+                )
+                .decode()
+                .strip()
+                .split("\n")
+            )
+            services = parse_services(output)
             await socket.send(
                 AgentResponse(
                     status=StatusResponse(services=services),
@@ -136,10 +165,18 @@ async def handle_request(socket: websockets.WebSocketClientProtocol):
             )
 
 
+async def shield_loop_function(func, *args, **kwargs):
+    while True:
+        try:
+            await func(*args, **kwargs)
+        except Exception as e:
+            logging.exception(e)
+
+
 async def main():
     async with websockets.connect(URL) as socket:
-        asyncio.create_task(handle_request(socket))
-        asyncio.create_task(send_status(socket))
+        asyncio.create_task(shield_loop_function(handle_request, socket))
+        asyncio.create_task(shield_loop_function(send_status, socket))
         await asyncio.Event().wait()
 
 
