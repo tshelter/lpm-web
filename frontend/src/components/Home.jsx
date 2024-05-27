@@ -18,7 +18,12 @@ function HomePage() {
 
             if (msg.status) {
                 const status = msg.status;
-                setAgents({...agents, [msg.agent_id]: <Agent key={msg.agent_id} agent_id={msg.agent_id} ctx={ctx} {...status}/>});
+                setAgents((prevAgents) => {
+                    return {
+                        ...prevAgents,
+                        [msg.agent_id]: <Agent key={msg.agent_id} agent_id={msg.agent_id} ctx={ctx} {...status}/>
+                    }
+                });
             }
             if (msg.action) {
                 publish("lpm:action", msg);
