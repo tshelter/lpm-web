@@ -1,14 +1,16 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home';
+import Footer from "./components/Footer";
+import NavbarApp from "./components/Navbar";
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-      </Routes>
-    </BrowserRouter>
-  );
+    return (
+        <div className="d-flex flex-column min-vh-100">
+            <NavbarApp/>
+            <Home/>
+            <div className="flex-grow-1"></div>
+            <Footer/>
+        </div>
+    );
 }
 
 export default App;
