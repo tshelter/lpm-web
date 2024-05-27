@@ -1,7 +1,8 @@
-import os
 import sys
+
 import asyncio
 import logging
+import os
 import shlex
 import subprocess
 import websockets
@@ -36,6 +37,7 @@ def parse_services(output: list[str]) -> list[Service]:
         for name, is_active, is_enabled, memory in [
             line.split() if len(line.split()) == 4 else line.split() + [""]
             for line in output
+            if line and len(line.split()) in (3, 4)
         ]
     ]
 
@@ -165,18 +167,18 @@ async def handle_request(socket: websockets.WebSocketClientProtocol):
             )
 
 
-async def shield_loop_function(func, *args, **kwargs):
-    while True:
-        try:
-            await func(*args, **kwargs)
-        except Exception as e:
-            logging.exception(e)
+async def depend_on_loop(func, *args, **kwargs):
+    try:
+        await func(*args, **kwargs)
+    except Exception as e:
+        logging.exception(e)
+        exit(1)
 
 
 async def main():
     async with websockets.connect(URL) as socket:
-        asyncio.create_task(shield_loop_function(handle_request, socket))
-        asyncio.create_task(shield_loop_function(send_status, socket))
+        asyncio.create_task(depend_on_loop(handle_request, socket))
+        asyncio.create_task(depend_on_loop(send_status, socket))
         await asyncio.Event().wait()
 
 

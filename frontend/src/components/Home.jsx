@@ -3,6 +3,7 @@ import config from "../config";
 import {useEffect, useRef, useState} from "react";
 import Agent from "../components/Agent";
 import {publish} from "../events";
+import Container from "react-bootstrap/Container";
 
 
 function HomePage() {
@@ -35,10 +36,11 @@ function HomePage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // noinspection JSValidateTypes
     return (
-        <div>
+        <Container>
             {Object.values(agents)}
-        </div>
+        </Container>
     );
 }
 

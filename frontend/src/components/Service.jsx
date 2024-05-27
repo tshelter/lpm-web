@@ -1,7 +1,8 @@
 import {v4 as uuid_v4} from "uuid";
 import React, {useEffect, useRef, useState} from 'react';
-import {Button, Collapse} from "react-bootstrap";
+import {Button, ButtonGroup, Collapse} from "react-bootstrap";
 import {subscribe, unsubscribe} from "../events";
+import Logs from "./Logs";
 
 
 function Service({ctx, agent_id, name, is_active, is_enabled, memory}) {
@@ -69,27 +70,21 @@ function Service({ctx, agent_id, name, is_active, is_enabled, memory}) {
     return (
         <li>
             <h2>{name}</h2>
-            <p>Memory: {memory}</p>
-            <p>Active: {is_active ? "Yes" : "No"}</p>
-            <p>Enabled: {is_enabled ? "Yes" : "No"}</p>
+            <div>Memory: {memory}</div>
+            <div>Active: {is_active ? "Yes" : "No"}</div>
+            <div>Enabled: {is_enabled ? "Yes" : "No"}</div>
 
-            <Button onClick={createHandler("start")} disabled={isHandling}>Start</Button>
-            <Button onClick={createHandler("stop")} disabled={isHandling}>Stop</Button>
-            <Button onClick={createHandler("restart")} disabled={isHandling}>Restart</Button>
-            <Button onClick={createHandler("reload")} disabled={isHandling}>Reload</Button>
-            <Button onClick={createHandler("remove")} disabled={isHandling}>Remove</Button>
-
-            <Button onClick={() => setIsShowLogs(!isShowLogs)}>{isShowLogs ? "Hide" : "Show"} Logs</Button>
+            <ButtonGroup>
+                <Button onClick={createHandler("start")} disabled={isHandling}>Start</Button>
+                <Button onClick={createHandler("stop")} disabled={isHandling}>Stop</Button>
+                <Button onClick={createHandler("restart")} disabled={isHandling}>Restart</Button>
+                <Button onClick={createHandler("reload")} disabled={isHandling}>Reload</Button>
+                <Button onClick={createHandler("remove")} disabled={isHandling}>Remove</Button>
+                <Button onClick={() => setIsShowLogs(!isShowLogs)}>{isShowLogs ? "Hide" : "Show"} Logs</Button>
+            </ButtonGroup>
             <Collapse in={isShowLogs}>
                 <div>
-                    <p>Logs:</p>
-                    <ul>
-                        {logs.map((log, index) => {
-                            return (
-                                <li key={index}>{log}</li>
-                            );
-                        })}
-                    </ul>
+                    <Logs logs={logs}/>
                 </div>
             </Collapse>
         </li>
