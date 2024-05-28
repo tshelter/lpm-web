@@ -6,17 +6,20 @@ footer {
     width: 100%;
     bottom: 0;
     position: relative;
+    color: #fff !important;
+    justify-content: center;
 }
 
-.footer-top {
+/* .footer-top {
     padding-top: 40px;
 }
 
 .footer-middle {
     padding-top: 40px;
-}
+} */
 
 .footer-bottom {
     text-align: center;
     padding: 20px 20px;
+    color: aliceblue;
 }
